@@ -11,6 +11,7 @@ import './providers/cart.dart';
 import './providers/products.dart';
 import './screens/product_detail.dart';
 import './screens/product_overview.dart';
+import './screens/login_signup.dart';
 
 void main() {
   runApp(MyApp());
@@ -42,7 +43,8 @@ class MyApp extends StatelessWidget {
               ),
         ),
         routes: {
-          '/': (_) => ProductOverview(),
+          '/': (_) => LoginSignup(),
+          ProductOverview.routeName: (_) => ProductOverview(),
           ProductDetail.routeName: (_) => ProductDetail(),
           CartOverview.routeName: (_) => CartOverview(),
           MyOrders.routeName: (_) => MyOrders(),
