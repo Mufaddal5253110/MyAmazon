@@ -1,6 +1,9 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
+
+import 'package:provider/provider.dart';
+
+import '../providers/auth.dart';
 
 enum AuthMode { Signup, Login }
 
@@ -92,7 +95,8 @@ class LoginSignupCard extends StatefulWidget {
   _LoginSignupCardState createState() => _LoginSignupCardState();
 }
 
-class _LoginSignupCardState extends State<LoginSignupCard> {
+class _LoginSignupCardState extends State<LoginSignupCard>
+    with SingleTickerProviderStateMixin {
   final GlobalKey<FormState> _formKey = GlobalKey();
   AuthMode _authMode = AuthMode.Login;
   Map<String, String> _authData = {
@@ -101,8 +105,45 @@ class _LoginSignupCardState extends State<LoginSignupCard> {
   };
   var _isLoading = false;
   final _passwordController = TextEditingController();
+  // AnimationController _controller;
+  // Animation<Offset> _slideAnimation;
+  // Animation<double> _opacityAnimation;
 
-  void _submit() {
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _controller = AnimationController(
+  //     vsync: this,
+  //     duration: Duration(
+  //       milliseconds: 300,
+  //     ),
+  //   );
+  //   _slideAnimation = Tween<Offset>(
+  //     begin: Offset(0, -1.5),
+  //     end: Offset(0, 0),
+  //   ).animate(
+  //     CurvedAnimation(
+  //       parent: _controller,
+  //       curve: Curves.fastOutSlowIn,
+  //     ),
+  //   );
+  //   _opacityAnimation = Tween(begin: 0.0, end: 1.0).animate(
+  //     CurvedAnimation(
+  //       parent: _controller,
+  //       curve: Curves.easeIn,
+  //     ),
+  //   );
+  //   // _heightAnimation.addListener(() => setState(() {}));
+  // }
+
+  // @override
+  // void dispose() {
+  //   // TODO: implement dispose
+  //   super.dispose();
+  //   _controller.dispose();
+  // }
+
+  Future<void> _submit() async {
     if (!_formKey.currentState.validate()) {
       // Invalid!
       return;
@@ -112,9 +153,31 @@ class _LoginSignupCardState extends State<LoginSignupCard> {
       _isLoading = true;
     });
     if (_authMode == AuthMode.Login) {
-      // Log user in
+      try {
+        await Provider.of<Auth>(context, listen: false).authentication(
+            _authData['email'], _authData['password'], 'signInWithPassword');
+      } catch (error) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            error,
+            textAlign: TextAlign.center,
+          ),
+        ));
+      }
     } else {
-      // Sign user up
+      try {
+        await Provider.of<Auth>(context, listen: false).authentication(
+            _authData['email'], _authData['password'], 'signUp');
+      } catch (error) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            error,
+            textAlign: TextAlign.center,
+          ),
+        ));
+      }
     }
     setState(() {
       _isLoading = false;
@@ -141,7 +204,9 @@ class _LoginSignupCardState extends State<LoginSignupCard> {
         borderRadius: BorderRadius.circular(10.0),
       ),
       elevation: 8.0,
-      child: Container(
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeIn,
         height: _authMode == AuthMode.Signup ? 320 : 260,
         constraints:
             BoxConstraints(minHeight: _authMode == AuthMode.Signup ? 320 : 260),
@@ -160,7 +225,6 @@ class _LoginSignupCardState extends State<LoginSignupCard> {
                       return 'Invalid email!';
                     }
                     return null;
-                    return null;
                   },
                   onSaved: (value) {
                     _authData['email'] = value;
@@ -174,13 +238,20 @@ class _LoginSignupCardState extends State<LoginSignupCard> {
                     if (value.isEmpty || value.length < 5) {
                       return 'Password is too short!';
                     }
+                    return null;
                   },
                   onSaved: (value) {
                     _authData['password'] = value;
                   },
                 ),
-                if (_authMode == AuthMode.Signup)
-                  TextFormField(
+                AnimatedContainer(
+                  duration: Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  constraints: BoxConstraints(
+                    minHeight: _authMode == AuthMode.Signup ? 60 : 0,
+                    maxHeight: _authMode == AuthMode.Signup ? 120 : 0,
+                  ),
+                  child: TextFormField(
                     enabled: _authMode == AuthMode.Signup,
                     decoration: InputDecoration(labelText: 'Confirm Password'),
                     obscureText: true,
@@ -189,9 +260,11 @@ class _LoginSignupCardState extends State<LoginSignupCard> {
                             if (value != _passwordController.text) {
                               return 'Passwords do not match!';
                             }
+                            return null;
                           }
                         : null,
                   ),
+                ),
                 SizedBox(
                   height: 20,
                 ),

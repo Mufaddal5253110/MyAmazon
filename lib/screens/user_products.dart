@@ -8,12 +8,13 @@ class UserProducts extends StatelessWidget {
   static const routeName = '/user-product';
 
   Future<void> _refreshPage(BuildContext context) async {
-    await Provider.of<Products>(context, listen: false).getData();
+    await Provider.of<Products>(context, listen: false).getData(true);
   }
 
   @override
   Widget build(BuildContext context) {
-    final productData = Provider.of<Products>(context);
+    print("Manage Product Build Run");
+    //final productData = Provider.of<Products>(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -21,16 +22,27 @@ class UserProducts extends StatelessWidget {
           style: Theme.of(context).textTheme.title,
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: () => _refreshPage(context),
-        child: ListView.builder(
-          padding: EdgeInsets.all(10),
-          itemBuilder: (context, index) => UserProductItem(
-              productData.products[index].title,
-              productData.products[index].id,
-              productData.products[index].imageUrl),
-          itemCount: productData.products.length,
-        ),
+      body: FutureBuilder(
+        future: _refreshPage(context),
+        builder: (context, snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.waiting:
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+            default:
+              return Consumer<Products>(
+                builder: (context, productData, child) => ListView.builder(
+                  padding: EdgeInsets.all(10),
+                  itemBuilder: (context, index) => UserProductItem(
+                      productData.mineProducts[index].title,
+                      productData.mineProducts[index].id,
+                      productData.mineProducts[index].imageUrl),
+                  itemCount: productData.mineProducts.length,
+                ),
+              );
+          }
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

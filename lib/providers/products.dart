@@ -40,8 +40,19 @@ class Products with ChangeNotifier {
     // ),
   ];
 
+  List<Product> _mineProducts = [];
+
+  final String token;
+  final String userId;
+
+  Products(this.token, this.userId, this._products, this._mineProducts);
+
   List<Product> get products {
     return [..._products];
+  }
+
+  List<Product> get mineProducts {
+    return [..._mineProducts];
   }
 
   List<Product> get favProducts {
@@ -54,7 +65,7 @@ class Products with ChangeNotifier {
 
   Future<void> updateProduct(String id, Product updatedProduct) async {
     final url =
-        'https://workouttraining-ff114.firebaseio.com/products/$id.json';
+        'https://workouttraining-ff114.firebaseio.com/products/$id.json?auth=$token';
     await http.patch(
       url,
       body: json.encode({
@@ -62,20 +73,30 @@ class Products with ChangeNotifier {
         "imageUrl": updatedProduct.imageUrl,
         "price": updatedProduct.price,
         "title": updatedProduct.title,
+        "createdBy": userId,
       }),
     );
     final index = _products.indexWhere((element) => element.id == id);
+    final mineIndex = _mineProducts.indexWhere((element) => element.id == id);
     _products[index] = updatedProduct;
+    _mineProducts[mineIndex] = updatedProduct;
     notifyListeners();
   }
 
-  Future<void> getData() async {
+  Future<void> getData([bool filtering = false]) async {
+    final filteredUrl =
+        filtering ? '&orderBy="createdBy"&equalTo="$userId"' : '';
     try {
-      const url = 'https://workouttraining-ff114.firebaseio.com/products.json';
+      final url =
+          'https://workouttraining-ff114.firebaseio.com/products.json?auth=$token$filteredUrl';
       final response = await http.get(url);
-      print(json.decode(response.body));
+      print(response.statusCode);
       final Map<String, dynamic> allProduct = json.decode(response.body);
       final List<Product> product = [];
+      final favResponse = await http.get(
+          'https://workouttraining-ff114.firebaseio.com/Favourites/$userId/.json?auth=$token');
+      final favRes = json.decode(favResponse.body);
+
       allProduct.forEach((prodId, prodData) {
         product.add(Product(
           id: prodId,
@@ -83,10 +104,11 @@ class Products with ChangeNotifier {
           description: prodData['description'],
           imageUrl: prodData['imageUrl'],
           price: prodData['price'],
-          isFav: prodData['isFav'],
+          isFav: favRes == null ? false : favRes[prodId] ?? false,
         ));
       });
-      _products = product;
+      _mineProducts = filtering ? product : _mineProducts;
+      _products = filtering ? _products : product;
       notifyListeners();
     } catch (error) {
       print(error);
@@ -96,7 +118,8 @@ class Products with ChangeNotifier {
 
   Future<void> addProduct(Product product) async {
     try {
-      const url = 'https://workouttraining-ff114.firebaseio.com/products.json';
+      final url =
+          'https://workouttraining-ff114.firebaseio.com/products.json?auth=$token';
       final response = await http.post(
         url,
         body: json.encode({
@@ -104,7 +127,7 @@ class Products with ChangeNotifier {
           "imageUrl": product.imageUrl,
           "price": product.price,
           "title": product.title,
-          "isFav": product.isFav,
+          "createdBy": userId,
         }),
       );
       print(json.decode(response.body));
@@ -116,6 +139,7 @@ class Products with ChangeNotifier {
         id: json.decode(response.body)['name'],
       );
       _products.insert(0, newProduct);
+      _mineProducts.insert(0, newProduct);
       notifyListeners();
     } catch (error) {
       print(error);
@@ -125,16 +149,22 @@ class Products with ChangeNotifier {
 
   Future<void> deleteProduct(String id) async {
     try {
-      final url = 'https://workouttraining-ff114.firebaseio.com/products/$id.json';
+      final url =
+          'https://workouttraining-ff114.firebaseio.com/products/$id.json?auth=$token';
       final prodIndex = _products.indexWhere((element) => element.id == id);
+      final mineProdIndex =
+          _mineProducts.indexWhere((element) => element.id == id);
       var prod = _products[prodIndex];
+      var mineProd = _mineProducts[mineProdIndex];
       _products.removeWhere((element) => element.id == id);
+      _mineProducts.removeWhere((element) => element.id == id);
       notifyListeners();
       final response = await http.delete(url);
       if (response.statusCode == 200 || response.statusCode == 201) {
         prod = null;
       } else {
         _products.insert(prodIndex, prod);
+        _mineProducts.insert(mineProdIndex,mineProd);
         notifyListeners();
         throw "error";
       }

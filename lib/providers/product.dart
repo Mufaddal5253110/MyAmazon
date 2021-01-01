@@ -21,17 +21,15 @@ class Product with ChangeNotifier {
     this.isFav = false,
   });
 
-  Future<void> toogleFavourites() async {
+  Future<void> toogleFavourites(String userId, String token) async {
     try {
       final url =
-          'https://workouttraining-ff114.firebaseio.com/products/$id.json';
+          'https://workouttraining-ff114.firebaseio.com/Favourites/$userId/$id.json?auth=$token';
       isFav = !isFav;
       notifyListeners();
-      final response = await http.patch(
+      final response = await http.put(
         url,
-        body: json.encode({
-          "isFav": isFav,
-        }),
+        body: json.encode(isFav),
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
         //prod = null;
