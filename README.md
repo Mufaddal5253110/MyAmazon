@@ -1,4 +1,4 @@
-<h1 align="center">MyMarket</h1>
+<h1 align="center">MyAmazon</h1>
 <h3 align="center"<h4 align="center">This is a complete functional app that works on Android. For state management, I had use Provider package. For backend I have used firebase as Rest APIs</h4>
 .</h3>
 
